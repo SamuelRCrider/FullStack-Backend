@@ -1,6 +1,9 @@
+require("dotenv").config();
 const express = require("express");
 const morgan = require("morgan");
 const cors = require("cors");
+
+const Person = require("./models/people");
 const app = express();
 
 app.use(cors());
@@ -38,18 +41,14 @@ let phoneBook = [
   },
 ];
 
-const generateId = () => {
-  const maxId =
-    phoneBook.length > 0 ? Math.max(...phoneBook.map((p) => p.id)) : 0;
-  return maxId + 1;
-};
-
 app.get("/", (req, res) => {
   res.send("hello");
 });
 
 app.get("/api/persons", (req, res) => {
-  res.json(phoneBook);
+  Person.find({}).then((people) => {
+    res.json(people);
+  });
 });
 
 app.get("/info", (req, res) => {
@@ -62,14 +61,14 @@ app.get("/info", (req, res) => {
 });
 
 app.get("/api/persons/:id", (req, res) => {
-  const id = Number(req.params.id);
-  const person = phoneBook.find((p) => {
-    return p.id === id;
-  });
-  if (person) {
-    res.json(person);
-  }
-  res.status(404).end();
+  Person.findById(req.params.id)
+    .then((person) => {
+      res.json(person);
+    })
+    .catch((error) => {
+      console.log("id doesn't exist:", error.message);
+      res.status(404).end();
+    });
 });
 
 app.post("/api/persons", (req, res) => {
@@ -82,22 +81,24 @@ app.post("/api/persons", (req, res) => {
   if (!body.number) {
     return res.status(400).json({ error: "missing number" });
   }
-  const duplicateNameCheck = phoneBook.find(
-    (p) => p.name.toLowerCase() === body.name.toLowerCase()
-  );
-  if (duplicateNameCheck) {
-    return res.status(400).json({ error: "name already in phonebook" });
-  }
+  //   Person.find({ name: body.name })
+  //     .then((person) => {
+  //       return res.status(400).json({ error: "name already in phonebook" });
+  //     })
+  //     .catch((error) => {
+  //       console.log(
+  //         "hurray! no person matches so go ahead and add em!... wait I don't know how because I would have to make a promise in a promise"
+  //       );
+  //     });
 
-  const person = {
-    id: generateId(),
+  const person = new Person({
     name: body.name,
     number: body.number,
-  };
+  });
 
-  phoneBook = phoneBook.concat(person);
-
-  res.json(person);
+  person.save().then((savedPerson) => {
+    res.json(savedPerson);
+  });
 });
 
 app.delete("/api/persons/:id", (req, res) => {
@@ -112,7 +113,7 @@ app.delete("/api/persons/:id", (req, res) => {
 
 // app.use(unknownEndpoint);
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
