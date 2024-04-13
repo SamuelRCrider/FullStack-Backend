@@ -7,6 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js",
     "dev": "nodemon index.js",
+    "lint": "eslint .",
     "build:ui": "rm -rf dist && cd ../FullStack-Open/partTwo/phoneBook && npm run build && cp -r dist ../../../FullStack-Backend",
     "deploy:full": "npm run build:ui && git add . && git commit -m uibuild && git push"
   },
